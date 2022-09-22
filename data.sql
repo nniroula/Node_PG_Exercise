@@ -1,5 +1,5 @@
 -- create database
-DROP DATABAE IF EXISTS biztime;
+DROP DATABASE IF EXISTS biztime;
 CREATE DATABASE biztime;
 -- create database above
 \c biztime
