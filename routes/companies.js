@@ -7,9 +7,6 @@
 // the data from the database.
 
 // So, for example, the “get list of companies should return”:
-
-// So, for example, the “get list of companies should return”:
-
 // {companies: [{code, name}, ...]}
 // Assuming result is the result from your query, you could produce this with a line like:
 
@@ -19,7 +16,8 @@
 
 const express = require('express');
 const router = express.Router();
-const db = require('../db')
+const db = require('../db');
+const ExpressError = require('../expressError');
 
 
 // modify app.js to include to middleware to parse JSON from url-encoded form body.
@@ -28,5 +26,116 @@ router.get('/', async (req, res, next) => {
     // return res.json(result.rows);
     return res.json({companies: result.rows});
 })
+
+
+// GET /companies/[code]
+// Return obj of company: {company: {code, name, description}}
+
+// If the company given cannot be found, this should return a 404 status response.
+
+router.get("/:code", async (req, res, next) => {
+    try{
+        let { code } = req.params; // OR let { id } = req.params;
+        let result = await db.query(`SELECT * FROM companies WHERE code=$1`, [code])
+        // const result = await db.query(`SELECT * FROM users WHERE type=$1`, [type])
+        console.log(result);
+        return res.send({company: result.rows[0]});
+    }catch(e){
+        return next(e);
+    }
+})
+
+
+// POST /companies
+// Adds a company.
+
+// Needs to be given JSON like: {code, name, description}
+
+// Returns obj of new company: {company: {code, name, description}}
+
+
+
+router.post('/', async (req, res, next) => {
+    try{
+        const { code, name, description } = req.body;
+        const result = await db.query(`INSERT INTO companies(code, name, description) VALUES($1, $2, $3) RETURNING 
+        code, name, description`, 
+        [code, name, description]);
+        return res.status(201).json(result.rows)
+    }catch(e){
+        return next(e);
+    }
+})
+
+
+// PUT /companies/[code]
+// Edit existing company.
+
+// Should return 404 if company cannot be found.
+
+// Needs to be given JSON like: {name, description}
+
+// Returns update company object: {company: {code, name, description}}
+
+router.patch('/:code', async (req, res, next) => {
+    try{
+        const { name, description } = req.body;
+        const codeInParam = req.params;
+
+        console.log(`Name in the body is ${name}`)
+
+        // check if the name already exist in database
+        // const nameCheck = db.query(`SELECT * FROM companies WHERE name=$1`, [name]);   
+     
+        // if(nameCheck.length === 0){
+        // //     try{
+        //         // nameCheck.rows[0].name = name;
+        //         const result = await db.query('UPDATE companies SET name=$1, description=$2 RETURNING name, description',
+        //         [name, description]);
+
+        //         if(result.rows.length === 0){
+        //             throw new ExpressError(`comany with the code of ${codeInParam} does not exist`)
+        //         }
+        //         // return res.send({company: {codeInParam, name, description}});
+        //         return res.send({company: {code, name, description}});
+
+        //     // }catch(e){
+        //     //     return next(e);
+        //     // }
+        // }
+
+
+        const result = await db.query('UPDATE companies SET name=$1, description=$2 RETURNING name, description',
+        [name, description]);
+
+     
+        // debugger;
+        if(result.rows.length === 0){
+            throw new ExpressError(`comany with the code of ${codeInParam} does not exist`)
+        }
+        return res.send({company: {code, name, description}});
+    }catch(e){
+        return next(e);
+    }
+})
+
+
+// DELETE
+
+router.delete('/:code', async (req, res, next) => {
+    try{
+        const checkCode = await db.query('SELECT * FROM companies WHERE code=$1', [req.params.code]);
+        // console.log(checkCode.rows.length);
+        if(checkCode.rows.length === 0){
+            return res.send({status: 404});
+        }else{
+            await db.query('DELETE FROM companies WHERE code=$1', [req.params.code])
+            return res.send({status: "deleted"});
+        } 
+    }catch(e){
+        return next(e);
+    }
+})
+
 
 module.exports = router;
