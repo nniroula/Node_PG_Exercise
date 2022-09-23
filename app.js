@@ -2,15 +2,17 @@
 
 
 const express = require("express");
+const ExpressError = require("./expressError");
 
 const app = express();
-const ExpressError = require("./expressError")
-
 app.use(express.json());
 
 // Middleware to parse to json
 const uRoutes = require('./routes/companies');
 app.use('/companies', uRoutes);
+
+const invoiceRoutes = require('./routes/invoices'); // invoices is a file in the routes directory
+app.use('/invoices', invoiceRoutes);
 
 
 /** 404 handler */
