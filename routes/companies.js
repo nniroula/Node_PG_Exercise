@@ -30,16 +30,18 @@ router.get('/', async (req, res, next) => {
 
 // GET /companies/[code]
 // Return obj of company: {company: {code, name, description}}
-
 // If the company given cannot be found, this should return a 404 status response.
 
 router.get("/:code", async (req, res, next) => {
     try{
-        let { code } = req.params; // OR let { id } = req.params;
+        let { code } = req.params; 
         let result = await db.query(`SELECT * FROM companies WHERE code=$1`, [code])
-        // const result = await db.query(`SELECT * FROM users WHERE type=$1`, [type])
-        console.log(result);
-        return res.send({company: result.rows[0]});
+        if(result.rows.length === 0){
+            // return ({status: 404})
+            return res.send({status: 404});
+        }else{
+            return res.send({company: result.rows[0]});
+        }
     }catch(e){
         return next(e);
     }
@@ -48,12 +50,8 @@ router.get("/:code", async (req, res, next) => {
 
 // POST /companies
 // Adds a company.
-
 // Needs to be given JSON like: {code, name, description}
-
 // Returns obj of new company: {company: {code, name, description}}
-
-
 
 router.post('/', async (req, res, next) => {
     try{
@@ -67,61 +65,35 @@ router.post('/', async (req, res, next) => {
     }
 })
 
-
 // PUT /companies/[code]
 // Edit existing company.
-
 // Should return 404 if company cannot be found.
-
 // Needs to be given JSON like: {name, description}
-
 // Returns update company object: {company: {code, name, description}}
 
-router.patch('/:code', async (req, res, next) => {
+// router.patch('/:code', async (req, res, next) => {
+router.put('/:code', async (req, res, next) => {
     try{
         const { name, description } = req.body;
-        const codeInParam = req.params;
+        // const codeInParam = req.params.code;
+        const code = req.params.code;
 
-        console.log(`Name in the body is ${name}`)
+        const result = await db.query('UPDATE companies SET name=$1, description=$2 WHERE code=$3 RETURNING code, name, description',
+        [name, description, code]);
 
-        // check if the name already exist in database
-        // const nameCheck = db.query(`SELECT * FROM companies WHERE name=$1`, [name]);   
-     
-        // if(nameCheck.length === 0){
-        // //     try{
-        //         // nameCheck.rows[0].name = name;
-        //         const result = await db.query('UPDATE companies SET name=$1, description=$2 RETURNING name, description',
-        //         [name, description]);
-
-        //         if(result.rows.length === 0){
-        //             throw new ExpressError(`comany with the code of ${codeInParam} does not exist`)
-        //         }
-        //         // return res.send({company: {codeInParam, name, description}});
-        //         return res.send({company: {code, name, description}});
-
-        //     // }catch(e){
-        //     //     return next(e);
-        //     // }
-        // }
-
-
-        const result = await db.query('UPDATE companies SET name=$1, description=$2 RETURNING name, description',
-        [name, description]);
-
-     
         // debugger;
         if(result.rows.length === 0){
-            throw new ExpressError(`comany with the code of ${codeInParam} does not exist`)
+            throw new ExpressError(`comany with the code of ${code} does not exist`, 404)
+        }else{
+             // return res.send({company: {code, name, description}});
+            return res.send({company: result.rows[0]});
         }
-        return res.send({company: {code, name, description}});
     }catch(e){
         return next(e);
     }
 })
 
-
 // DELETE
-
 router.delete('/:code', async (req, res, next) => {
     try{
         const checkCode = await db.query('SELECT * FROM companies WHERE code=$1', [req.params.code]);
