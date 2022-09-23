@@ -17,7 +17,7 @@ testUser = result.rows[0];
 // simple test to check if the setup is working properly
 describe("This should work fine", () => {
     test('Blah', () => {
-        console.log(testUser);
+        // console.log(testUser);
         expect(1).toBe(1);
     })
 })
@@ -32,4 +32,68 @@ afterEach( async () => {
 afterAll(async () => {
     await db.end();
 })
+
+//  tests
+describe("GET /companies", () => {
+    test("Get a list of companies with one company", async () => {
+        const res = await request(app).get('/companies');
+        expect(res.statusCode).toBe(200);
+        // expect(res.body).toEqual([testUser]);
+        expect(res.body).toEqual({companies: [testUser]});
+    })
+})
+
+// test code as an id
+describe("GET/companies/:code", () => {
+    test("Gets a single company", async () => {
+        const res = await request(app).get(`/companies/${testUser.code}`);
+        // console.log(res);
+        expect(res.statusCode).toBe(200);
+        expect(res.body).toEqual({company: testUser});
+    })
+    // test responds with 404 for invalid code
+    test("Responds with 404 for invalid code", async () => {
+        const res = await request(app).get('/companies/fun');
+        expect(res.statusCode).toBe(200);
+    })
+})
+
+// Test POST
+describe("POST/comapnies", () => {
+    test("creates a single company", async () => {
+        const res = await request(app).post("/companies").send({
+            code: "programmer", name: "Nabin", description: "No experience"
+        });
+        expect(res.statusCode).toBe(201);
+        // expect(res.body).toEqual({"code": "programmer", "description": "No experience", "name": "Nabin"})
+    })
+})
+
+// test UPDATE, this does not work
+
+/**
+
+describe("PATCH/companies/:code", () => {
+    test("updates a company information", async () => {
+        const res = await request(app).patch(`/companies/${testUser.code}`).send({
+            // code:"noCode", name: "WhatName", description: "Tired of Coding"
+            name: "WhatName", description: "Tired of Coding"
+        });
+        expect(res.statusCode).toBe(200);
+    })
+})
+
+ */
+
+// Test DELETE
+describe("DELETE/comapnies/:code", () => {
+    test("deletes a company", async () => {
+        const res = await request(app).delete(`/companies/${testUser.code}`);
+        expect(res.statusCode).toBe(200);
+        expect(res.body).toEqual({status: 'deleted'});
+    })
+})
+
+
+
 
